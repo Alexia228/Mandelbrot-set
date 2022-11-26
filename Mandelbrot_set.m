@@ -7,6 +7,7 @@ classdef Mandelbrot_set < handle
     properties (Access = private)
         fig;
         axis;
+        use_gpu = false;
     end
     properties (Access = public)
         init_frame = struct('x', struct('min', -2, 'max', 1), ...
@@ -27,13 +28,27 @@ classdef Mandelbrot_set < handle
             
             Cplx_grid = complex(zeros(size(Cplx_grid_base)));
             
-            for i = 1:obj.max_iterations
-                disp(['progress: ' num2str(round(i/obj.max_iterations*10000)/100) '%']);
-                Cplx_grid = Cplx_grid.^2 + Cplx_grid_base;
+            if ~obj.use_gpu
+                for i = 1:obj.max_iterations
+                    disp(['progress: ' num2str(round(i/obj.max_iterations*10000)/100) '%']);
+                    Cplx_grid = Cplx_grid.^2 + Cplx_grid_base;
+                end
+                Cplx_grid = abs(Cplx_grid);
+                Cplx_grid(Cplx_grid > 2) = 0;
+                Cplx_grid(Cplx_grid > 0) = 1;
+            else
+                Cplx_grid_gpu = gpuArray(Cplx_grid);
+                Cplx_grid_base_gpu = gpuArray(Cplx_grid_base);
+                for i = 1:obj.max_iterations
+                    disp(['progress: ' num2str(round(i/obj.max_iterations*10000)/100) '%']);
+                    Cplx_grid_gpu = Cplx_grid_gpu.^2 + Cplx_grid_base_gpu;
+                end
+                Cplx_grid_gpu = abs(Cplx_grid_gpu);
+                Cplx_grid_gpu(Cplx_grid_gpu > 2) = 0;
+                Cplx_grid_gpu(Cplx_grid_gpu > 0) = 1;
+                Cplx_grid = gather(Cplx_grid_gpu);
             end
-            Cplx_grid = abs(Cplx_grid);
-            Cplx_grid(Cplx_grid > 2) = 0;
-            Cplx_grid(Cplx_grid > 0) = 1;
+            
             out_data.z = 1 - Cplx_grid;
             out_data.x = X_range;
             out_data.y = Y_range;
@@ -42,8 +57,9 @@ classdef Mandelbrot_set < handle
     end
     
     methods (Access = public)
-        function obj = Mandelbrot_set()
-            obj.frame = obj.init_frame;
+        function obj = Mandelbrot_set(use_gpu)
+            use_gpu = logical(use_gpu);
+            obj.use_gpu = use_gpu;
         end
         
         function draw(obj)
