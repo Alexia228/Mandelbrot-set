@@ -28,6 +28,7 @@ classdef Mandelbrot_set < handle
             Cplx_grid = complex(zeros(size(Cplx_grid_base)));
             
             for i = 1:obj.max_iterations
+                disp(['progress: ' num2str(round(i/obj.max_iterations*10000)/100) '%']);
                 Cplx_grid = Cplx_grid.^2 + Cplx_grid_base;
             end
             Cplx_grid = abs(Cplx_grid);
@@ -62,6 +63,7 @@ classdef Mandelbrot_set < handle
             out_data = compute(obj);
             imagesc(out_data.x, out_data.y, out_data.z)
             colormap gray
+            axis equal
             set(gca, 'ydir', 'normal')
         end
         
