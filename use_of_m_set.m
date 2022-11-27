@@ -1,5 +1,10 @@
 
 
+% run this to find all NOTE, FIXME and TODO
+dofixrpt('Mandelbrot_set.m', 'file')
+
+
+%%
 
 clc
 

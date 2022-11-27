@@ -1,20 +1,57 @@
-
-
-
-
+% TODO:
+% 1) Add new coloring scheme
+% 
 
 classdef Mandelbrot_set < handle
+%------------------PUBLIC SECTION--------------------------
+% NOTE:
+% this functions and data properties could be used from anywhere   
+% also think about someone set resolution equal to -3/4 :D
+
+% FIXME: add some protection to this two variables
+    properties (Access = public)
+        max_iterations = 500;
+        resolution = 1000; %pix per side
+    end
+    
+    methods (Access = public) 
+        function obj = Mandelbrot_set(use_gpu)
+            use_gpu = logical(use_gpu);
+            obj.use_gpu = use_gpu;
+        end
+        
+        function draw(obj)
+            if class(obj.fig) == "matlab.ui.Figure" && isvalid(obj.fig)
+                figure(obj.fig); %open figure 'fig' on foreground
+                X_lim = get(obj.axis, 'xlim');
+                Y_lim = get(obj.axis, 'ylim');
+                obj.frame.x.min = X_lim(1);
+                obj.frame.x.max = X_lim(2);
+                obj.frame.y.min = Y_lim(1);
+                obj.frame.y.max = Y_lim(2);
+            else
+                obj.frame = obj.init_frame;
+                obj.fig = figure; %figure will appear on your screen on this line
+                obj.axis = gca; %create axis and get its handle for further use
+            end
+            out_data = compute(obj);
+            imagesc(out_data.x, out_data.y, out_data.z)
+            colormap gray %coloring magic here (dont forget that data is inverted z = 1 - Cplx_grid)
+            axis equal
+            set(gca, 'ydir', 'normal')
+        end
+    end
+    
+
+%------------------PRIVATE SECTION-------------------------
+% this functions and data properties could be used from class methods ONLY
     properties (Access = private)
         fig;
         axis;
         use_gpu = false;
-    end
-    properties (Access = public)
         init_frame = struct('x', struct('min', -2, 'max', 1), ...
-                            'y', struct('min', -2, 'max', 2));
+            'y', struct('min', -2, 'max', 2));
         frame;
-        max_iterations = 2000;
-        resolution = 100; %pix per side
     end
     
     methods (Access = private)
@@ -53,44 +90,6 @@ classdef Mandelbrot_set < handle
             out_data.x = X_range;
             out_data.y = Y_range;
         end
-        
-    end
-    
-    methods (Access = public)
-        function obj = Mandelbrot_set(use_gpu)
-            use_gpu = logical(use_gpu);
-            obj.use_gpu = use_gpu;
-        end
-        
-        function draw(obj)
-            if class(obj.fig) == "matlab.ui.Figure" && isvalid(obj.fig)
-                X_lim = get(obj.axis, 'xlim');
-                Y_lim = get(obj.axis, 'ylim');
-                obj.frame.x.min = X_lim(1);
-                obj.frame.x.max = X_lim(2);
-                obj.frame.y.min = Y_lim(1);
-                obj.frame.y.max = Y_lim(2);
-                figure(obj.fig);
-            else
-                obj.frame = obj.init_frame;
-                obj.fig = figure;
-                obj.axis = gca;
-            end
-            out_data = compute(obj);
-            imagesc(out_data.x, out_data.y, out_data.z)
-            colormap gray
-            axis equal
-            set(gca, 'ydir', 'normal')
-        end
-        
     end
 end
-
-
-
-
-
-
-
-
 
