@@ -10,20 +10,19 @@ classdef Mandelbrot_set < handle
 
 % FIXME: add some protection to this two variables
     properties (Access = public)
-        max_iterations = 500;
-        resolution = 1000; %pix per side
+        max_iterations = 500;            % До какого члена гоняем последовательность
+        resolution = 1000; %pix per side % Количество начальных точек С
     end
     
     methods (Access = public) 
-        function obj = Mandelbrot_set(use_gpu)
-            use_gpu = logical(use_gpu);
-            obj.use_gpu = use_gpu;
+        function obj = Mandelbrot_set(use_gpu) % Конструктор. Название такое же, как у класса        
+            obj.use_gpu = logical(use_gpu);
         end
         
         function draw(obj)
-            if class(obj.fig) == "matlab.ui.Figure" && isvalid(obj.fig)
-                figure(obj.fig); %open figure 'fig' on foreground
-                X_lim = get(obj.axis, 'xlim');
+            if class(obj.fig) == "matlab.ui.Figure" && isvalid(obj.fig) %Проверка на то, что это фигура и на то, есть ли она
+                figure(obj.fig); %open figure 'fig' on foreground       %Перерисовка фигуры
+                X_lim = get(obj.axis, 'xlim'); % Перерисовка в новую область при приближении
                 Y_lim = get(obj.axis, 'ylim');
                 obj.frame.x.min = X_lim(1);
                 obj.frame.x.max = X_lim(2);
@@ -35,7 +34,7 @@ classdef Mandelbrot_set < handle
                 obj.axis = gca; %create axis and get its handle for further use
             end
             out_data = compute(obj);
-            imagesc(out_data.x, out_data.y, out_data.z)
+            imagesc(out_data.x, out_data.y, out_data.z) %Отрисовка
             colormap gray %coloring magic here (dont forget that data is inverted z = 1 - Cplx_grid)
             axis equal
             set(gca, 'ydir', 'normal')
@@ -56,21 +55,21 @@ classdef Mandelbrot_set < handle
     
     methods (Access = private)
         function out_data = compute(obj)
-            X_range = linspace(obj.frame.x.min, obj.frame.x.max, obj.resolution);
+            X_range = linspace(obj.frame.x.min, obj.frame.x.max, obj.resolution); % Генерирует n точек с заданным расстоянием
             Y_range = linspace(obj.frame.y.min, obj.frame.y.max, obj.resolution);
             
-            [X_grid, Y_grid] = meshgrid(X_range, Y_range);
-            Cplx_grid_base = complex(X_grid, Y_grid);
+            [X_grid, Y_grid] = meshgrid(X_range, Y_range); % Создаём мешгрид
+            Cplx_grid_base = complex(X_grid, Y_grid); % Создаём комплексную сетку (это С, оно неизменно на каждом шаге последовательности)
             clearvars X_grid Ygrid
             
-            Cplx_grid = complex(zeros(size(Cplx_grid_base)));
+            Cplx_grid = complex(zeros(size(Cplx_grid_base)));% Создаём пустую комплексную сетку
             
             if ~obj.use_gpu
-                for i = 1:obj.max_iterations
+                for i = 1 : obj.max_iterations
                     disp(['progress: ' num2str(round(i/obj.max_iterations*10000)/100) '%']);
-                    Cplx_grid = Cplx_grid.^2 + Cplx_grid_base;
+                    Cplx_grid = Cplx_grid.^2 + Cplx_grid_base; % Последовательность Zn=(Zn-1)^2 + C
                 end
-                Cplx_grid = abs(Cplx_grid);
+                Cplx_grid = abs(Cplx_grid);                 %CPU
                 Cplx_grid(Cplx_grid > 2) = 0;
                 Cplx_grid(Cplx_grid > 0) = 1;
             else
@@ -80,7 +79,7 @@ classdef Mandelbrot_set < handle
                     disp(['progress: ' num2str(round(i/obj.max_iterations*10000)/100) '%']);
                     Cplx_grid_gpu = Cplx_grid_gpu.^2 + Cplx_grid_base_gpu;
                 end
-                Cplx_grid_gpu = abs(Cplx_grid_gpu);
+                Cplx_grid_gpu = abs(Cplx_grid_gpu);         %GPU
                 Cplx_grid_gpu(Cplx_grid_gpu > 2) = 0;
                 Cplx_grid_gpu(Cplx_grid_gpu > 0) = 1;
                 Cplx_grid = gather(Cplx_grid_gpu);
